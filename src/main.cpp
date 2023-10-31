@@ -16,7 +16,7 @@ int positionX;
  
 LiquidCrystal_I2C lcd(0x27, totalColumns, totalRows);
 
-const char* menuItems[] = {"Corona", "Biere", "Labatt", "Chepo",  NULL };
+const char* menuItems[] = {"Corona", "50", "Labatt", "Bleu Dry",  NULL };
  
 void menu(int counter);
 void initMenu(const char* items[]);
@@ -57,9 +57,7 @@ void loop() {
       lcd.setCursor(0, 0);
       lcd.print("Vous avez pris:");
       lcd.setCursor(0, 1);
-      lcd.print(menuItems[((counter/2) % 4) + 1]);
-      Serial.print("modulo 4 :");
-      Serial.println((counter / 2) % 4);
+      lcd.print(menuItems[((counter/2) % 4)]);
       globalState = 1;
     }
     break;
