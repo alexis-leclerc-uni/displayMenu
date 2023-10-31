@@ -3,19 +3,23 @@
 #include <Wire.h>
 #define outputA 6
 #define outputB 7
+#define inputSW 8
  
 int aState;
+int globalState = 0;
 int aLastState;
 int totalColumns = 16;
 int totalRows = 2;
 int counter = 1000001;
+int positionY;
+int positionX;
  
 LiquidCrystal_I2C lcd(0x27, totalColumns, totalRows);
 
-char menuItems[4][10] = {"Corona", "Biere", "Labatt", "Chepo"};
+const char* menuItems[] = {"Corona", "Biere", "Labatt", "Chepo",  NULL };
  
 void menu(int counter);
-void initMenu(char items[4][10]);
+void initMenu(const char* items[]);
 
 
 void setup(){
@@ -23,29 +27,22 @@ void setup(){
   lcd.backlight(); // use to turn on and turn off LCD back light
   pinMode (outputA,INPUT);
   pinMode (outputB,INPUT);
-  pinMode (8, INPUT_PULLUP);
+  pinMode (inputSW, INPUT_PULLUP);
    
   Serial.begin (9600);
   aLastState = digitalRead(outputA);  
 
   initMenu(menuItems);
 
-/*
-  lcd.setCursor(1,0);
-  lcd.print("Corona");
-  lcd.setCursor(1,1);
-  lcd.print("Biere");
-  lcd.setCursor(10,0);
-  lcd.print("Labatt");
-  lcd.setCursor(10,1);
-  lcd.print("Chepo");
-*/
   menu(counter/2);
 }
  
 void loop() {
    aState = digitalRead(outputA); // Reads the "current" state of the outputA
    // If the previous and the current state of the outputA are different, that means a Pulse has occured
+   switch (globalState)
+   {
+   case 0:
    if (aState != aLastState){    
      // If the outputB state is different to the outputA state, that means the encoder is rotating clockwise
      if (digitalRead(outputB) != aState) {
@@ -53,26 +50,49 @@ void loop() {
      } else {
        counter --;
      }
+    menu(counter/2);
    }
-   menu(counter/2);
+    if(!digitalRead(inputSW)){
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Vous avez pris:");
+      lcd.setCursor(0, 1);
+      lcd.print(menuItems[((counter/2) % 4) + 1]);
+      Serial.print("modulo 4 :");
+      Serial.println((counter / 2) % 4);
+      globalState = 1;
+    }
+    break;
+  case 1:
+   if (aState != aLastState){    
+    lcd.clear();
+    initMenu(menuItems);
+    globalState = 0;
+   }
+  
+   
+   default:
+    break;
+   }
    aLastState = aState; // Updates the previous state of the outputA with the current state
  }
 
 void menu(int counter){
-  lcd.setCursor(0, counter%2);
-  lcd.print(">");
-  lcd.setCursor(0, (counter)%2-1);
+  lcd.setCursor(positionX, positionY);
   lcd.print(" ");
+  positionX = (counter%4) >= 2 ? 9 : 0;
+  positionY = (counter % 2);
+  lcd.setCursor(positionX, positionY);
+  lcd.print(">");
 }
 
-void initMenu(char items[4][10]){
+void initMenu(const char* items[]){
+  int nbItems;
+  while(items[nbItems] != nullptr){
+    nbItems++;
+  }
   //Serial.println(sizeof(items));
-  for(unsigned int i = 0; i <= sizeof(items) + 1; i++){
-    Serial.println(items[i]);
-    Serial.print("i : ");
-    Serial.println(i);
-    Serial.println((i%4)>2 ? 10 : 1);
-    Serial.println(i%2);
+  for(unsigned int i = 0; i <= (nbItems); i++){
     lcd.setCursor((i%4) >= 2 ? 10 : 1, (i % 2));
     lcd.print(items[i]);
   }
